@@ -169,7 +169,7 @@ function init() {
     cartIcon.addEventListener('click', toggleCart);
     closeCart.addEventListener('click', toggleCart);
     clearCartBtn.addEventListener('click', clearCart);
-    checkoutBtn.addEventListener('click', checkout);
+    checkoutBtn.addEventListener('click', handleCheckout);
 }
 
 // Display Products
@@ -362,16 +362,59 @@ function clearCart() {
 }
 
 // Checkout
-function checkout() {
-    if (cart.length === 0) {
-        showNotification('Your cart is empty!', 'error');
-        return;
-    }
+function handleCheckout() {
+    const cartItems = document.getElementById('cart-items');
+    const totalPrice = document.getElementById('cart-total-price').textContent;
+    const amount = parseFloat(totalPrice.replace('₹', ''));
     
-    // In a real application, this would redirect to a checkout page
-    alert('Thank you for your order! This is a demo website, so no actual purchase will be made.');
-    clearCart();
-    toggleCart();
+    // Create summary view
+    let summaryHTML = `
+        <div class="order-summary">
+            <h2>Order Summary</h2>
+            <div class="summary-items">
+                ${cartItems.innerHTML}
+            </div>
+            <div class="summary-total">
+                <h3>Total Amount: ${totalPrice}</h3>
+            </div>
+            <button onclick="initiatePayment(${amount})" class="btn payment-btn">
+                Proceed to Payment
+            </button>
+        </div>
+    `;
+    
+    // Replace cart items with summary
+    cartItems.innerHTML = summaryHTML;
+}
+
+function initiatePayment(amount) {
+    const options = {
+        key: 'Your razorpay key', // Test mode key example
+        amount: amount * 100, // Amount in paise
+        currency: 'INR',
+        name: 'DAN Store',
+        description: 'Purchase from DAN Store',
+        handler: function(response) {
+            alert('Payment Successful! Payment ID: ' + response.razorpay_payment_id);
+            // Clear cart
+            document.getElementById('cart-items').innerHTML = '';
+            document.getElementById('cart-total-price').textContent = '₹0.00';
+            localStorage.removeItem('cart'); // Assuming you're using localStorage
+            // Close cart modal
+            document.getElementById('cart-modal').style.display = 'none';
+        },
+        prefill: {
+            name: '',
+            email: '',
+            contact: ''
+        },
+        theme: {
+            color: '#2c3e50'
+        }
+    };
+    
+    const rzp = new Razorpay(options);
+    rzp.open();
 }
 
 // Show Notification
@@ -392,4 +435,11 @@ function showNotification(message, type = 'success') {
 }
 
 // Initialize the website when DOM is loaded
+document.addEventListener('DOMContentLoaded', function() {
+    const checkout = document.getElementById('checkout');
+    if (checkout) {
+        checkout.addEventListener('click', handleCheckout);
+    }
+});
+
 document.addEventListener('DOMContentLoaded', init); 
